@@ -9,8 +9,19 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@bhavinpatel57/element-x": "file:bhavinpatel57-element-x-1.4.367.tgz",
+    "@react-oauth/google": "^0.12.2",
+    "bcryptjs": "^3.0.2",
+    "google-auth-library": "^10.1.0",
+    "iconify-icon": "^3.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "lit": "^3.3.1",
+    "mongoose": "^8.16.3",
+    "next": "15.4.1",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.4.1"
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
   }
 }
