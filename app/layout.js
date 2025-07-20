@@ -1,6 +1,7 @@
 import './globals.css';
 import ElementXLoader from './components/element-x.js';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { NotificationProvider } from './components/NotificationProvider.js';
 
 export const metadata = {
   title: 'Inventory & Billing',
@@ -17,7 +18,11 @@ export default function RootLayout({ children }) {
           <ElementXLoader />
           <h1>Inventory & Billing </h1>
         </header>
-        <main className='main-content'>{children}</main></GoogleOAuthProvider>
+        <main className='main-content'>
+          <NotificationProvider>
+          {children}</NotificationProvider>
+          
+          </main></GoogleOAuthProvider>
       </body>
     </html>
   );

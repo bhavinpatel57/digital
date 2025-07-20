@@ -22,6 +22,16 @@
     color: #fff;
   }
 
+.dialog-title {
+    font-size: var(--ex-sz-lg);
+    font-weight: bold;
+    color: var(--ex-active-primary);
+  }
+.dialog-subtitle {
+    font-size: var(--ex-sz-md);
+    color: var(--ex-text-secondary);
+  }
+
   .form-header{
     display: flex;
     flex-direction: column;

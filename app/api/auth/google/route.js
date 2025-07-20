@@ -1,22 +1,32 @@
-// /api/auth/google/route.js
 import { OAuth2Client } from 'google-auth-library';
-import { connectDB } from '../../../../lib/db';
-import { User } from '../../../../models/User';
-import jwt from 'jsonwebtoken';
+import { connectDB } from '@/lib/db';
+import { User } from '@/models/User';
+import { Shop } from '@/models/Shop';
+import { generateToken } from '@/utils/auth';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export async function POST(req) {
   try {
     await connectDB();
-    const { token } = await req.json();
-    console.log('Google token received:', token);
+
+    const { token: idToken } = await req.json();
+
+    if (!idToken) {
+      return Response.json({ error: 'Missing Google token' }, { status: 400 });
+    }
+
     const ticket = await client.verifyIdToken({
-      idToken: token,
+      idToken,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
 
     const payload = ticket.getPayload();
+
+    if (!payload || !payload.email) {
+      return Response.json({ error: 'Invalid Google token' }, { status: 401 });
+    }
+
     const { email, name } = payload;
 
     let user = await User.findOne({ email });
@@ -29,13 +39,33 @@ export async function POST(req) {
       });
     }
 
-    const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '7d',
-    });
+    const token = generateToken({ id: user._id });
 
-    return Response.json({ token: jwtToken, user: { email: user.email, name: user.name } });
+    let shop = await Shop.findOne({ userId: user._id, isRoot: true });
+    if (!shop) {
+      shop = await Shop.create({
+        userId: user._id,
+        name: name || 'My Shop',
+        isRoot: true,
+        parentShopId: null,
+      });
+    }
+
+    return Response.json({
+      message: 'Google login successful',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+      },
+      shop: {
+        id: shop._id,
+        name: shop.name,
+      },
+    });
   } catch (err) {
-    console.error('Google login error:', err);
+    console.error('❌ Google Login Error:', err);
     return Response.json({ error: 'Google login failed' }, { status: 500 });
   }
 }

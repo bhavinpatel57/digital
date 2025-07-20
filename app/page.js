@@ -1,7 +1,12 @@
 'use client';
 
 
+
+
 export default function Home() {
-  return <p>
-    Welcome to Inventory & Billing</p>;
+  return <div>
+    <p>
+    Welcome to Inventory & Billing</p>
+
+  </div>;
 }
