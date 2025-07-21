@@ -5,10 +5,18 @@ import { sendVerificationEmail } from '@/utils/mailer';
 
 export async function POST(request) {
   await connectDB();
+
   const { email } = await request.json();
+  if (!email) {
+    return Response.json({ error: 'Email is required' }, { status: 400 });
+  }
 
   const user = await User.findOne({ email });
-  if (!user) return Response.json({ message: 'OTP sent if account exists' });
+
+  // Always return generic success response
+  const genericResponse = Response.json({ message: 'OTP sent if account exists' });
+
+  if (!user) return genericResponse;
 
   const { rawToken, hashedToken } = generateResetToken();
   user.resetToken = hashedToken;
@@ -16,5 +24,17 @@ export async function POST(request) {
   await user.save();
 
   await sendVerificationEmail(user.email, rawToken);
-  return Response.json({ message: 'OTP sent if account exists', userId: user._id });
+
+  if (user.provider === 'google' && !user.password) {
+    return Response.json({
+      message: 'Google account detected. Please verify OTP to set a password.',
+      action: 'verify-otp-set-password',
+      userId: user._id.toString(),
+    });
+  }
+
+  return Response.json({
+    message: 'OTP sent if account exists',
+    userId: user._id.toString(),
+  });
 }

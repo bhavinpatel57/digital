@@ -8,16 +8,25 @@ import { User } from '@/models/User';
 export async function POST(request) {
   await connectDB();
   const { email, password, name } = await request.json();
+
   if (!email || !password || !name) {
     return Response.json({ error: 'All fields are required' }, { status: 400 });
   }
 
-  const existingUser = await User.findOne({ email });
+  const normalizedEmail = email.toLowerCase();
+
+  const existingUser = await User.findOne({ email: normalizedEmail });
   if (existingUser) {
     return Response.json({ error: 'User already registered' }, { status: 400 });
   }
 
-  const existingPending = await PendingUser.findOne({ email });
+  // Optional: Clean up expired pending entries
+  await PendingUser.deleteMany({
+    email: normalizedEmail,
+    emailVerifyTokenExpires: { $lt: Date.now() },
+  });
+
+  const existingPending = await PendingUser.findOne({ email: normalizedEmail });
   if (existingPending) {
     return Response.json({ error: 'Verification pending. Please check your email.' }, { status: 400 });
   }
@@ -26,13 +35,13 @@ export async function POST(request) {
   const { rawToken, hashedToken } = generateEmailVerificationToken();
 
   const pending = await PendingUser.create({
-    email,
+    email: normalizedEmail,
     name,
     password: hashedPassword,
     emailVerifyToken: hashedToken,
     emailVerifyTokenExpires: Date.now() + 10 * 60 * 1000,
   });
 
-  await sendVerificationEmail(email, rawToken);
+  await sendVerificationEmail(normalizedEmail, rawToken);
   return Response.json({ message: 'OTP sent. Please verify.', userId: pending._id });
 }

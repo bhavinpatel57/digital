@@ -11,3 +11,13 @@ export function generateRefreshToken(user) {
 export function verifyRefreshToken(token) {
   return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
 }
+
+// ✅ Add this
+export function verifyAccessToken(token) {
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    console.error('Invalid access token:', err);
+    return null;
+  }
+}

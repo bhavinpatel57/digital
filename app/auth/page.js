@@ -5,9 +5,11 @@ import { Required, StrongPassword, ValidEmail, ValidEmailOrPhone, ValidName } fr
 import './auth.css';
 import { GoogleLogin } from '@react-oauth/google';
 import { notifyGlobal } from '../components/NotificationProvider.js';
+import { useAuth } from '@/context/AuthContext'; // adjust path as needed
 
 let ExInput, ExButton, ExForm,ExDivider,ExDialog,ExOtp;
 export default function AuthPage() {
+  const { setUser } = useAuth();
   const [mode, setMode] = useState('register');
   const [registerData, setRegisterData] = useState({ name: '', email: '', password: '' });
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -20,7 +22,6 @@ export default function AuthPage() {
   const [otpData, setOtpData] = useState({ userId: '' });
   const [otpValue, setOtpValue] = useState('');
   const [isReady, setIsReady] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register' | 'forgot' | 'reset'
 const [forgotEmail, setForgotEmail] = useState('');
 const forgotDialog = useRef(null);
 const otpDialog = useRef(null);
@@ -28,7 +29,6 @@ const [forgotStep, setForgotStep] = useState('email'); // 'email' | 'otp' | 'res
 const [forgotUserId, setForgotUserId] = useState('');
 const [forgotOtp, setForgotOtp] = useState('');
 const [newPassword, setNewPassword] = useState('');
-
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -44,7 +44,10 @@ const [newPassword, setNewPassword] = useState('');
     }
   }, []);
 
-  const toggleMode = () => setMode(prev => (prev === 'login' ? 'register' : 'login'));
+const toggleMode = () => {
+  setMode(mode === 'login' ? 'register' : 'login');
+};
+
 
   const handleRegisterChange = (key, value) =>
     setRegisterData(prev => ({ ...prev, [key]: value }));
@@ -53,29 +56,49 @@ const [newPassword, setNewPassword] = useState('');
     setLoginData(prev => ({ ...prev, [key]: value }));
 
 
-  const handleForgotPassword = async () => {
-    setForgotEmailLoading(true);
-    try {
-      const res = await fetch('/api/auth/forgot/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail }),
+const handleForgotPassword = async () => {
+  setForgotEmailLoading(true);
+  try {
+    const res = await fetch('/api/auth/forgot/initiate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: forgotEmail }),
+    });
+
+    const json = await res.json();
+
+    if (!res.ok) {
+      notifyGlobal({ title: 'Error', message: json.error, type: 'alert' });
+    } else if (json.action === 'set-password') {
+      // 🚀 Redirect to set-password dialog instead of OTP
+      setForgotUserId(json.userId);
+      setForgotStep('set-password'); // or openSetPasswordDialog()
+      notifyGlobal({
+        title: 'Set Password',
+        message: json.message,
+        type: 'info',
       });
-  
-      const json = await res.json();
-      if (!res.ok) {
-        notifyGlobal({ title: 'Error', message: json.error, type: 'alert' });
-      } else {
-        setForgotUserId(json.userId);
-        setForgotStep('otp');
-        notifyGlobal({ title: 'OTP Sent', message: json.message, type: 'success' });
-      }
-    } catch {
-      notifyGlobal({ title: 'Error', message: 'Try again later.', type: 'alert' });
-    } finally {
-      setForgotEmailLoading(false);
+    } else {
+      // ✅ Proceed with OTP
+      setForgotUserId(json.userId);
+      setForgotStep('otp');
+      notifyGlobal({
+        title: 'OTP Sent',
+        message: json.message,
+        type: 'success',
+      });
     }
-  };
+  } catch {
+    notifyGlobal({
+      title: 'Error',
+      message: 'Try again later.',
+      type: 'alert',
+    });
+  } finally {
+    setForgotEmailLoading(false);
+  }
+};
+
   
   const handleForgotOtpVerify = async () => {
     setForgotOtpLoading(true);
@@ -89,7 +112,6 @@ const [newPassword, setNewPassword] = useState('');
     setForgotOtpLoading(false);
   
     if (res.ok) {
-      setForgotOtp(''); // Clear OTP field
       setForgotStep('reset');
       notifyGlobal({ title: 'OTP Verified', message: 'You can now reset password.', type: 'success' });
     } else {
@@ -111,9 +133,8 @@ const [newPassword, setNewPassword] = useState('');
     if (res.ok) {
       notifyGlobal({ title: 'Password Reset', message: 'You can now log in.', type: 'success' });
       forgotDialog.current?.close();
-      setAuthMode('login');
+      setMode('login');
       setForgotStep('email');
-      setForgotUserId('');
     } else {
       notifyGlobal({ title: 'Error', message: json.error, type: 'alert' });
     }
@@ -125,40 +146,48 @@ const [newPassword, setNewPassword] = useState('');
   
   
 
-  const handleLoginSubmit = async () => {
-    setLoginLoading(true);
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(loginData),
-      });
-  
-      const json = await res.json();
-      if (!res.ok) {
-        notifyGlobal({
-          title: 'Login Failed',
-          message: json.error || 'Invalid credentials.',
-          type: 'alert',
-        });
-        return;
-      }
-  
+const handleLoginSubmit = async () => {
+  setLoginLoading(true);
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(loginData),
+    });
+
+    const json = await res.json();
+
+    if (!res.ok) {
       notifyGlobal({
-        title: 'Login Successful',
-        message: `Welcome ${json.user?.name || json.user?.email || 'User'}`,
-        type: 'success',
-      });
-    } catch (err) {
-      notifyGlobal({
-        title: 'Error',
-        message: 'Login error. Please try again.',
+        title: 'Login Failed',
+        message: json.error || 'Invalid credentials.',
         type: 'alert',
       });
-    } finally {
-      setLoginLoading(false);
+      return;
     }
-  };
+
+    // ✅ Store token and user
+    setUser(json.user);
+
+    notifyGlobal({
+      title: 'Login Successful',
+      message: `Welcome ${json.user?.name || json.user?.email}`,
+      type: 'success',
+    });
+
+  } catch (err) {
+    notifyGlobal({
+      title: 'Error',
+      message: 'Something went wrong. Please try again.',
+      type: 'alert',
+    });
+  } finally {
+    setLoginLoading(false);
+  }
+};
+
+
+
   
   const handleRegisterSubmit = async () => {
     setRegisterLoading(true);
@@ -193,7 +222,7 @@ const [newPassword, setNewPassword] = useState('');
         type: 'success',
       });
   
-      setAuthMode('login'); // Switch to login after registration
+      setMode('login'); // Switch to login after registration
     } catch (err) {
       notifyGlobal({
         title: 'Error',
@@ -217,9 +246,8 @@ const [newPassword, setNewPassword] = useState('');
 
   if (res.ok) {
     notifyGlobal({ title: 'Verified', message: 'Email verified!', type: 'success' });
-    setOtp('');
     otpDialog.current?.close();
-    setAuthMode('login');
+    setMode('login');
   } else {
     notifyGlobal({ title: 'Invalid OTP', message: json.error, type: 'alert' });
   }
@@ -260,6 +288,17 @@ const [newPassword, setNewPassword] = useState('');
         loading={resetPasswordLoading}
       />
     )}
+
+    {forgotStep === 'set-password' && (
+    <ResetPasswordForm
+     title="Set Password"
+    subtitle="You're almost done! Just set your new password."
+      data={{ password: newPassword }}
+      onChange={(key, val) => setNewPassword(val)}
+      onSubmit={handleResetPassword}
+      loading={resetPasswordLoading}
+    />
+  )}
 </ExDialog>
 
 
@@ -286,6 +325,7 @@ const [newPassword, setNewPassword] = useState('');
     onForgot={() => forgotDialog.current?.show({
       overlay: true,
     })} 
+    setUser={setUser} // Pass setUser to handle Google login
   />
     </div>
   </div>
@@ -302,13 +342,13 @@ const [newPassword, setNewPassword] = useState('');
         </div>
   
        
-        {(authMode === 'login' || authMode === 'register') && (
+        {(mode === 'login' || mode === 'register') && (
           <div className="auth-overlay">
             <div className="auth-info">
-              <h2>{authMode === 'login' ? 'New Here?' : 'Welcome Back'}</h2>
-              <h5>{authMode === 'login' ? 'Sign up and get started' : 'Already have an account?'}</h5>
+              <h2>{mode === 'login' ? 'New Here?' : 'Welcome Back'}</h2>
+              <h5>{mode === 'login' ? 'Sign up and get started' : 'Already have an account?'}</h5>
               <button className="toggle-btn" onClick={toggleMode}>
-                {authMode === 'login' ? 'Register' : 'Login'}
+                {mode === 'login' ? 'Register' : 'Login'}
               </button>
             </div>
           </div>
@@ -355,11 +395,11 @@ function ForgotPasswordForm({ email, onChange, onSubmit, loading }) {
 }
 
 
-function ResetPasswordForm({ data, onChange, onSubmit, loading }) {
+function ResetPasswordForm({ data, onChange, onSubmit, loading,title = 'Reset Password', subtitle = 'Set your new password'  }) {
   return (<>
       <div slot='dialog-title'>
-      <div className='dialog-title'>Reset Password</div>
-      <div className='dialog-subtitle'>Set your new password</div>
+    <div className='dialog-title'>{title}</div>
+      <div className='dialog-subtitle'>{subtitle}</div>
       </div>
       <ExForm
         formId="resetForm"
@@ -452,8 +492,56 @@ function RegisterForm({ data, onChange, onSuccess, loading }) {
   );
 }
 
+const handleGoogleLoginSuccess = async (credentialResponse, setUser) => {
+  const token = credentialResponse?.credential;
+  if (!token) {
+    notifyGlobal({
+      title: 'Error',
+      message: 'No Google token received.',
+      type: 'alert',
+    });
+    return;
+  }
 
-function LoginForm({ data, onChange, onSuccess, loading,onForgot }) {
+  try {
+    const res = await fetch('/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+
+    const json = await res.json();
+
+    if (res.ok) {
+      setUser(json.user);
+      notifyGlobal({
+        title: 'Welcome',
+        message: `Hello ${json.user?.name || json.user?.email || 'User'}`,
+        type: 'success',
+      });
+    } else {
+      notifyGlobal({
+        title: 'Google Login Failed',
+        message: json.error || 'Something went wrong.',
+        type: 'alert',
+      });
+    }
+  } catch (err) {
+    notifyGlobal({
+      title: 'Error',
+      message: 'Google login failed unexpectedly.',
+      type: 'alert',
+    });
+  }
+};
+
+
+function LoginForm({ data, onChange, onSuccess, loading,onForgot ,setUser}) {
+
+
+
+
+
   const fields = [
     {
       key: 'email',
@@ -509,39 +597,13 @@ function LoginForm({ data, onChange, onSuccess, loading,onForgot }) {
             Login
           </ExButton>
 
-          <GoogleLogin
-            onSuccess={async (credentialResponse) => {
-              const token = credentialResponse.credential;
+      <GoogleLogin
+onSuccess={(credentialResponse) => handleGoogleLoginSuccess(credentialResponse, setUser)}
+/>
 
-              const res = await fetch('/api/auth/google', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token }),
-              });
 
-              const json = await res.json();
-              if (res.ok) {
-                notifyGlobal({
-                  title: 'Welcome',
-                  message: `Hello ${json.user.name}`,
-                  type: 'success',
-                });
-              } else {
-                notifyGlobal({
-                  title: 'Google Login Failed',
-                  message: json.error || 'Something went wrong.',
-                  type: 'alert',
-                });
-              }
-            }}
-            onError={() => {
-              notifyGlobal({
-                title: 'Google Login Error',
-                message: 'Authentication failed.',
-                type: 'alert',
-              });
-            }}
-          />
+
+
     </div>
   );
 }

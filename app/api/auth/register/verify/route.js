@@ -5,8 +5,11 @@ import crypto from 'crypto';
 
 export async function POST(request) {
   await connectDB();
+
   const { userId, otp } = await request.json();
-  if (!userId || !otp) return Response.json({ error: 'Missing OTP or user ID' }, { status: 400 });
+  if (!userId || !otp) {
+    return Response.json({ error: 'Missing OTP or user ID' }, { status: 400 });
+  }
 
   const hashedToken = crypto.createHash('sha256').update(otp).digest('hex');
 
@@ -14,12 +17,14 @@ export async function POST(request) {
     _id: userId,
     emailVerifyToken: hashedToken,
     emailVerifyTokenExpires: { $gt: Date.now() },
-  });
+  }).select('email name password'); // only select needed fields
 
-  if (!pending) return Response.json({ error: 'Invalid or expired OTP' }, { status: 400 });
+  if (!pending) {
+    return Response.json({ error: 'Invalid or expired OTP' }, { status: 400 });
+  }
 
   const newUser = await User.create({
-    email: pending.email,
+    email: pending.email.toLowerCase(),
     password: pending.password,
     name: pending.name,
     provider: 'credentials',
@@ -27,5 +32,9 @@ export async function POST(request) {
   });
 
   await PendingUser.deleteOne({ _id: userId });
-  return Response.json({ message: 'User created successfully', userId: newUser._id });
+
+  return Response.json({
+    message: 'User created successfully',
+    userId: newUser._id,
+  });
 }

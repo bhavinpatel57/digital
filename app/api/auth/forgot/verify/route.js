@@ -4,7 +4,12 @@ import crypto from 'crypto';
 
 export async function POST(request) {
   await connectDB();
+
   const { userId, otp } = await request.json();
+  if (!userId || !otp) {
+    return Response.json({ error: 'Missing user ID or OTP' }, { status: 400 });
+  }
+
   const hashedToken = crypto.createHash('sha256').update(otp).digest('hex');
 
   const user = await User.findOne({
@@ -13,7 +18,9 @@ export async function POST(request) {
     resetTokenExpires: { $gt: Date.now() },
   });
 
-  if (!user) return Response.json({ error: 'Invalid or expired OTP' }, { status: 400 });
+  if (!user) {
+    return Response.json({ error: 'Invalid or expired OTP' }, { status: 400 });
+  }
 
-  return Response.json({ message: 'OTP verified' });
+  return Response.json({ message: 'OTP verified', userId });
 }
