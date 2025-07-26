@@ -78,3 +78,60 @@ p {
   font-size: var(--ex-fs-md);
   margin-bottom: var(--ex-sz-md);
 }
+
+main.homepage {
+  font-family: system-ui, sans-serif;
+  color: #111;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.section {
+  padding: 3rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.section:last-of-type {
+  border-bottom: none;
+}
+
+.headline {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.subtext {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  color: #555;
+}
+
+.section-title {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.feature-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.feature-list li {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+blockquote {
+  font-style: italic;
+  margin: 1rem 0;
+}
+
+.footer {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #888;
+}

@@ -26,7 +26,6 @@ export async function GET() {
 
     return Response.json({ user });
   } catch (err) {
-    console.error('❌ /api/auth/me error:', err);
     return Response.json({ error: 'Failed to fetch user' }, { status: 500 });
   }
 }

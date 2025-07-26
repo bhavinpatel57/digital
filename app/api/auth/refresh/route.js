@@ -29,7 +29,6 @@ export async function POST() {
 
     return Response.json({ accessToken });
   } catch (err) {
-    console.error('❌ Refresh token error:', err);
     return Response.json({ error: 'Invalid token' }, { status: 401 });
   }
 }

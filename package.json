@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@bhavinpatel57/element-x": "file:bhavinpatel57-element-x-1.4.367.tgz",
+    "@bhavinpatel57/element-x": "file:bhavin.tgz",
     "@react-oauth/google": "^0.12.2",
     "bcryptjs": "^3.0.2",
     "crypto": "^1.0.1",

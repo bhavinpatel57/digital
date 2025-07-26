@@ -22,7 +22,6 @@ export function AuthProvider({ children }) {
           setUser(null);
         }
       } catch (err) {
-        console.error('Auth check failed:', err);
         setUser(null);
       } finally {
         setLoading(false);
@@ -39,7 +38,6 @@ export function AuthProvider({ children }) {
         credentials: 'include', // ✅ send cookie for clearing on server
       });
     } catch (err) {
-      console.error('Logout failed:', err);
     } finally {
       setUser(null);
     }

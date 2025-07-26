@@ -1,11 +1,12 @@
+// models/Shop.js
 import mongoose from 'mongoose';
 
-// models/Shop.js
 const shopSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  isRoot: { type: Boolean, default: false },
-  parentShopId: { type: mongoose.Schema.Types.ObjectId, ref: 'Shop', default: null },
-});
-
+  description: String,
+  owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // One user owns one shop
+  contactEmail: String,
+  address: String,
+}, { timestamps: true });
 
 export const Shop = mongoose.models.Shop || mongoose.model('Shop', shopSchema);

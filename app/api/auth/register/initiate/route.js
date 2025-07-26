@@ -40,6 +40,7 @@ export async function POST(request) {
     password: hashedPassword,
     emailVerifyToken: hashedToken,
     emailVerifyTokenExpires: Date.now() + 10 * 60 * 1000,
+    role: 'user', // Default role, can be changed later
   });
 
   await sendVerificationEmail(normalizedEmail, rawToken);

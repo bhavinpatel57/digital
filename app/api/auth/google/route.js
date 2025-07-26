@@ -66,7 +66,6 @@ export async function POST(req) {
       },
     });
   } catch (err) {
-    console.error('❌ Google Login Error:', err);
     return Response.json({ error: 'Google login failed' }, { status: 500 });
   }
 }

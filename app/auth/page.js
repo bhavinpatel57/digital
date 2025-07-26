@@ -6,8 +6,8 @@ import './auth.css';
 import { GoogleLogin } from '@react-oauth/google';
 import { notifyGlobal } from '../components/NotificationProvider.js';
 import { useAuth } from '@/context/AuthContext'; // adjust path as needed
+import { ExInput, ExButton, ExForm, ExDivider, ExDialog, ExOtp } from '@bhavinpatel57/element-x';
 
-let ExInput, ExButton, ExForm,ExDivider,ExDialog,ExOtp;
 export default function AuthPage() {
   const { setUser } = useAuth();
   const [mode, setMode] = useState('register');
@@ -21,28 +21,15 @@ export default function AuthPage() {
   const [registerOtpLoading, setRegisterOtpLoading] = useState(false);
   const [otpData, setOtpData] = useState({ userId: '' });
   const [otpValue, setOtpValue] = useState('');
-  const [isReady, setIsReady] = useState(false);
-const [forgotEmail, setForgotEmail] = useState('');
-const forgotDialog = useRef(null);
-const otpDialog = useRef(null);
-const [forgotStep, setForgotStep] = useState('email'); // 'email' | 'otp' | 'reset'
-const [forgotUserId, setForgotUserId] = useState('');
-const [forgotOtp, setForgotOtp] = useState('');
-const [newPassword, setNewPassword] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const forgotDialog = useRef(null);
+  const otpDialog = useRef(null);
+  const [forgotStep, setForgotStep] = useState('email'); 
+  const [forgotUserId, setForgotUserId] = useState('');
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      import('@bhavinpatel57/element-x').then(mod => {
-        ExInput = mod.ExInput;
-        ExButton = mod.ExButton;
-        ExForm = mod.ExForm;
-        ExDivider = mod.ExDivider;
-        ExDialog = mod.ExDialog;
-        ExOtp = mod.ExOtp;
-        setIsReady(true);
-      });
-    }
-  }, []);
+
 
 const toggleMode = () => {
   setMode(mode === 'login' ? 'register' : 'login');
@@ -254,7 +241,6 @@ const handleLoginSubmit = async () => {
 };
 
 
-  if (!isReady) return null;
 
   return (
     <div className="auth-container">
@@ -367,6 +353,7 @@ function ForgotPasswordForm({ email, onChange, onSubmit, loading }) {
       </div>
       <ExForm
         formId="forgotForm"
+        resetOnSubmit
         slot='dialog-form'
         onformSubmit={e => {
           if (e.detail.success) onSubmit();
@@ -403,6 +390,7 @@ function ResetPasswordForm({ data, onChange, onSubmit, loading,title = 'Reset Pa
       </div>
       <ExForm
         formId="resetForm"
+        resetOnSubmit
         slot='dialog-form'
         onformSubmit={e => {
           if (e.detail.success) onSubmit();
@@ -461,6 +449,7 @@ function RegisterForm({ data, onChange, onSuccess, loading }) {
       <ExDivider />
       <ExForm
         formId="registerForm"
+        resetOnSubmit
         onformSubmit={e => {
           if (e.detail.success) onSuccess();
         }}
@@ -564,6 +553,7 @@ function LoginForm({ data, onChange, onSuccess, loading,onForgot ,setUser}) {
       </div>
       <ExDivider />
       <ExForm
+        resetOnSubmit
         formId="loginForm"
         onformSubmit={e => {
           e.preventDefault();
@@ -616,6 +606,7 @@ function OtpForm({ userId, otp, onChange, onVerify, loading,formId }) {
       </div>
       <ExForm
         formId={formId}
+        resetOnSubmit
         onformSubmit={(e) => {
           if (e.detail.success) onVerify({ userId, otp });
         }} slot='dialog-form'

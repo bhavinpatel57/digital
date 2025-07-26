@@ -29,6 +29,7 @@ export async function POST(request) {
     name: pending.name,
     provider: 'credentials',
     isVerified: true,
+    role:'user', // Default role, can be changed later
   });
 
   await PendingUser.deleteOne({ _id: userId });
