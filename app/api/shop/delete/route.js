@@ -1,33 +1,46 @@
-// app/api/shop/delete/route.js
 import { cookies } from 'next/headers';
 import { verifyAccessToken } from '@/utils/token';
 import { connectDB } from '@/lib/db';
 import { Shop } from '@/models/Shop';
+import mongoose from 'mongoose';
 
 export async function DELETE(req) {
   try {
+    console.log('🗑️ /api/shop/delete called');
     await connectDB();
-const cookieStore = await cookies(); // ✅ fixed
-const token = cookieStore.get('accessToken')?.value;
 
+    const cookieStore =await cookies();
+    const token = cookieStore.get('accessToken')?.value;
     if (!token) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const decoded = verifyAccessToken(token);
     if (!decoded) return Response.json({ error: 'Invalid token' }, { status: 401 });
 
     const { shopId } = await req.json();
-    if (!shopId) return Response.json({ error: 'Shop ID is required' }, { status: 400 });
+    console.log('📦 Deletion request for:', shopId);
 
-    const shop = await Shop.findOne({ _id: shopId });
-
-    if (!shop || shop.owner.toString() !== decoded.id) {
-      return Response.json({ error: 'Shop not found or unauthorized' }, { status: 403 });
+    if (!mongoose.Types.ObjectId.isValid(shopId)) {
+      return Response.json({ error: 'Invalid shop ID' }, { status: 400 });
     }
 
-    await shop.deleteOne();
+    const shop = await Shop.findById(shopId);
+    if (!shop) return Response.json({ error: 'Shop not found' }, { status: 404 });
+    if (String(shop.owner) !== decoded.id) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
-    return Response.json({ success: true, message: 'Shop deleted' });
+    // Optional: prevent deletion if shop has children
+    const children = await Shop.find({ parent: shop._id });
+    if (children.length > 0) {
+      return Response.json({ error: 'Cannot delete shop with child nodes' }, { status: 400 });
+    }
+
+    await Shop.findByIdAndDelete(shop._id);
+    console.log('✅ Shop deleted:', shop._id);
+
+    return Response.json({ success: true });
   } catch (err) {
-    return Response.json({ error: 'Shop deletion failed' }, { status: 500 });
+    console.error('❌ /api/shop/delete error:', err);
+    return Response.json({ error: 'Failed to delete shop' }, { status: 500 });
   }
 }

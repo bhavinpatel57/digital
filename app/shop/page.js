@@ -6,315 +6,222 @@ import {
   ExForm,
   ExButton,
   ExDialog,
-  ExDivider
+  ExCombobox,
 } from '@bhavinpatel57/element-x';
 import { notifyGlobal } from '../components/NotificationProvider';
 import { useAuth } from '@/context/AuthContext';
-import { useShop } from '@/context/ShopContext';
+import './shop.css'; // Assuming you have some styles for the shop hierarchy
 
-export default function ShopPage() {
-  const [shops, setShops] = useState([]);
-  const [branches, setBranches] = useState([]);
-  const [editingBranch, setEditingBranch] = useState(null);
-  const [editingShop, setEditingShop] = useState(null);
-  const shopDialogRef = useRef(null);
-  const branchDialogRef = useRef(null);
-
-  const [shopForm, setShopForm] = useState({
-    name: '',
-    description: '',
-    domain: '',
-    contactEmail: '',
-    address: '',
-  });
-
-  const [branchForm, setBranchForm] = useState({
-    name: '',
-    address: '',
-  });
-
+export default function ShopHierarchyManager() {
+  const [nodes, setNodes] = useState([]);
+  const [editingNode, setEditingNode] = useState(null);
+  const [nodeForm, setNodeForm] = useState({ name: '', address: '', parentId: '' });
+  const nodeDialogRef = useRef(null);
   const { user } = useAuth();
-  const { shop, setShop } = useShop();
+  const [selectedPath, setSelectedPath] = useState([]);
+
+  const handleSelectNode = (node, level) => {
+    setSelectedPath(prev => [...prev.slice(0, level), node]);
+  };
+
+  const getChildren = (parentId) =>
+    nodes.filter(node => {
+      const nodeParentId = node.parent?._id || node.parent || '';
+      return String(nodeParentId) === (parentId ?? '');
+    });
 
   useEffect(() => {
-    if (user) fetchShops();
+    if (user) {
+      fetchNodes();
+      setSelectedPath([]);
+    }
   }, [user]);
 
-  useEffect(() => {
-    if (shop) fetchBranches(shop._id);
-  }, [shop]);
-
-  const handleShopChange = (key, value) => {
-    setShopForm(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handleBranchChange = (key, value) => {
-    setBranchForm(prev => ({ ...prev, [key]: value }));
-  };
-
-  const fetchShops = async () => {
+  const fetchNodes = async () => {
     try {
       const res = await fetch('/api/shop/list');
       const data = await res.json();
-
-      if (res.ok && Array.isArray(data.shops)) {
-        setShops(data.shops);
-        if (!shop && data.shops.length) setShop(data.shops[0]);
-      } else {
-        setShops([]);
-        notifyGlobal(data.error || 'Failed to load shops', 'error');
-      }
+      if (res.ok && Array.isArray(data.shops)) setNodes(data.shops);
+      else notifyGlobal(data.error || 'Failed to load nodes', 'error');
     } catch (err) {
-      setShops([]);
-      notifyGlobal('Error fetching shops', 'error');
+      notifyGlobal('Error fetching nodes', 'error');
     }
   };
 
-  const fetchBranches = async (shopId) => {
-    try {
-      const res = await fetch(`/api/shop/branch/list?shopId=${shopId}`);
-      const data = await res.json();
-      if (res.ok && Array.isArray(data.branches)) {
-        setBranches(data.branches);
-      } else {
-        setBranches([]);
-        notifyGlobal(data.error || 'Failed to load branches', 'error');
-      }
-    } catch (err) {
-      setBranches([]);
-      notifyGlobal('Error fetching branches', 'error');
-    }
+  const handleNodeChange = (key, value) => {
+    setNodeForm(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleDeleteShop = async (shopId) => {
-  if (!confirm('Are you sure you want to delete this shop?')) return;
-
-  try {
-    const res = await fetch('/api/shop/delete', {
-      method: 'DELETE',
-      body: JSON.stringify({ shopId }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      notifyGlobal('Shop deleted', 'success');
-      fetchShops();
-      if (shop?._id === shopId) {
-        setShop(null);
-        setBranches([]);
-      }
-    } else {
-      notifyGlobal(data.error || 'Error deleting shop', 'error');
-    }
-  } catch (err) {
-    notifyGlobal('Error deleting shop', 'error');
-  }
-};
-const handleDeleteBranch = async (branchId) => {
-  if (!confirm('Are you sure you want to delete this branch?')) return;
-
-  try {
-    const res = await fetch('/api/shop/branch/delete', {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ branchId, shopId: shop._id }), // ✅ include shopId
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      notifyGlobal('Branch deleted', 'success');
-      fetchBranches(shop._id);
-    } else {
-      notifyGlobal(data.error || 'Error deleting branch', 'error');
-    }
-  } catch (err) {
-    notifyGlobal('Error deleting branch', 'error');
-  }
-};
-
-
-
-  const handleShopSubmit = async () => {
-    const body = { ...shopForm };
-    if (editingShop) body.shopId = editingShop._id;
-
-    const endpoint = editingShop ? '/api/shop/edit' : '/api/shop/create';
-
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      notifyGlobal(editingShop ? 'Shop updated' : 'Shop created', 'success');
-      closeShopDialog();
-      setEditingShop(null);
-      setShopForm({ name: '', description: '', domain: '', contactEmail: '', address: '' });
-      fetchShops();
-    } else {
-      notifyGlobal(data.error || 'Error saving shop', 'error');
-    }
-  };
-
-  const handleBranchSubmit = async () => {
+  const handleNodeSubmit = async () => {
+    const { name, address, parentId } = nodeForm;
     const body = {
-      ...branchForm,
-      shopId: shop._id,
-      ...(editingBranch ? { branchId: editingBranch._id } : {}),
+      name,
+      address,
+      parent: parentId || null,
     };
+    if (editingNode) body.shopId = editingNode._id;
 
-    const endpoint = editingBranch ? '/api/shop/branch/edit' : '/api/shop/branch/create';
+    const endpoint = editingNode ? '/api/shop/edit' : '/api/shop/create';
 
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      notifyGlobal(editingBranch ? 'Branch updated' : 'Branch created', 'success');
-      closeBranchDialog();
-      setBranchForm({ name: '', address: '' });
-      setEditingBranch(null);
-      fetchBranches(shop._id);
-    } else {
-      notifyGlobal(data.error || 'Error saving branch', 'error');
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        notifyGlobal(editingNode ? 'Node updated' : 'Node created', 'success');
+        closeNodeDialog();
+        fetchNodes();
+      } else {
+        notifyGlobal(data.error || 'Error saving node', 'error');
+      }
+    } catch (err) {
+      notifyGlobal('Error saving node', 'error');
     }
   };
 
-  const openShopDialog = () => {
-    setEditingShop(null);
-    setShopForm({ name: '', description: '', domain: '', contactEmail: '', address: '' });
-    shopDialogRef.current?.show({ overlay: true });
-  };
-
-  const closeShopDialog = () => {
-    shopDialogRef.current?.close();
-  };
-
-  const openBranchDialog = () => {
-    branchDialogRef.current?.show({ overlay: true });
-  };
-
-  const closeBranchDialog = () => {
-    branchDialogRef.current?.close();
-  };
-
-  return (
-    <div style={{ padding: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Shops</h2>
-        <ExButton onClick={openShopDialog}>+ Create Shop</ExButton>
-      </div>
-
-      <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', margin: '1rem 0' }}>
-        {Array.isArray(shops) && shops.map(s => (
-          <div key={s._id}  onClick={() => setShop(s)}  style={{ minWidth: '200px', border: shop?._id === s._id ? '2px solid #3b82f6' : '1px solid #ccc', padding: '1rem', borderRadius: '0.5rem', position: 'relative' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>{s.name}</span>
-             <div style={{ display: 'flex', gap: '0.25rem' }}>
-  <ExButton
-    size="xs"
-    variant="light"
-    onClick={(e) => {
-      e.stopPropagation();
-      setEditingShop(s);
-      setShopForm({
-        name: s.name,
-        description: s.description || '',
-        domain: s.domain || '',
-        contactEmail: s.contactEmail || '',
-        address: s.address || '',
+  const handleDeleteNode = async (shopId) => {
+    if (!confirm('Delete this node?')) return;
+    try {
+      const res = await fetch('/api/shop/delete', {
+        method: 'DELETE',
+        body: JSON.stringify({ shopId }),
       });
-      shopDialogRef.current?.show({ overlay: true });
-    }}
-  >✏️</ExButton>
-  <ExButton
-    size="xs"
-    variant="danger"
-    onClick={(e) => {
-      e.stopPropagation();
-      handleDeleteShop(s._id);
-    }}
-  >🗑️</ExButton>
-</div>
+      const data = await res.json();
+      if (res.ok) {
+        notifyGlobal('Node deleted', 'success');
+        fetchNodes();
+      } else {
+        notifyGlobal(data.error || 'Error deleting node', 'error');
+      }
+    } catch (err) {
+      notifyGlobal('Error deleting node', 'error');
+    }
+  };
 
-            </div>
-            <div>
-              <p>{s.description}</p>
-              <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>{s.domain}</p>
-            </div>
+  const openEditNode = (node) => {
+    setEditingNode(node);
+    setNodeForm({ name: node.name, address: node.address, parentId: node.parent || '' });
+    nodeDialogRef.current?.show({ overlay: true });
+  };
+
+  const closeNodeDialog = () => {
+    setEditingNode(null);
+    nodeDialogRef.current?.close();
+  };
+
+  const renderShopCard = (node, level) => {
+    const hasChildren = nodes.some(n => n.parentId === node._id);
+    const isActive = selectedPath[level]?._id === node._id;
+
+    return (
+      <div
+        key={node._id}
+        onClick={() => handleSelectNode(node, level)}
+className={`shop-card ${isActive ? 'active' : ''}`}
+      >
+        <div className="flex justify-between items-center">
+          <strong>{node.name}</strong>
+          <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+            <ExButton size="xs" variant="light" onClick={() => openEditNode(node)} title="Edit">✏️</ExButton>
+            <ExButton
+              size="xs"
+              variant="danger"
+              onClick={() =>
+                hasChildren
+                  ? notifyGlobal('Cannot delete: this shop has child nodes.', 'warning')
+                  : handleDeleteNode(node._id)
+              }
+              disabled={hasChildren}
+              title={hasChildren ? 'Cannot delete a parent shop' : 'Delete this shop'}
+            >
+              🗑️
+            </ExButton>
           </div>
+        </div>
+        <p className="text-sm mt-2 text-gray-600">{node.address}</p>
+      </div>
+    );
+  };
+
+return (
+  <div className="shop-manager">
+    <div className="shop-manager__header">
+      <h2>Shop Nodes</h2>
+      <ExButton
+        onClick={() => {
+          setNodeForm({ name: '', address: '', parentId: '' });
+          nodeDialogRef.current?.show({ overlay: true });
+        }}
+      >
+        + Add Node
+      </ExButton>
+    </div>
+
+    {selectedPath.length > 0 && (
+      <div className="shop-manager__breadcrumb">
+        <strong>Path:</strong>{' '}
+        <span className="shop-manager__breadcrumb-root" onClick={() => setSelectedPath([])}>Root</span>
+        {selectedPath.map((node, i) => (
+          <span key={node._id}>
+            {' / '}
+            <span
+              className="shop-manager__breadcrumb-node"
+              onClick={() => setSelectedPath(prev => prev.slice(0, i + 1))}
+            >
+              {node.name}
+            </span>
+          </span>
         ))}
       </div>
+    )}
 
-      {shop && (
-        <>
-          <ExDivider label={`Branches of ${shop.name}`} />
-          <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1rem 0' }}>
-            <ExButton onClick={openBranchDialog}>+ Create Branch</ExButton>
+    <div className="shop-manager__columns">
+      <div className="shop-column">
+        <h3>Root Shops</h3>
+        <div className="shop-list">
+          {getChildren('').map(node => renderShopCard(node, 0))}
+        </div>
+      </div>
+
+      {selectedPath.map((selectedNode, level) => (
+        <div key={selectedNode._id} className="shop-column">
+          <h3>{selectedNode.name} → Children</h3>
+          <div className="shop-list">
+            {getChildren(selectedNode._id).map(child => renderShopCard(child, level + 1))}
+            {getChildren(selectedNode._id).length === 0 && (
+              <div className="shop-empty">No child shops</div>
+            )}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            {Array.isArray(branches) && branches.map(branch => (
-              <div key={branch._id} style={{ border: '1px solid #ccc', padding: '1rem', borderRadius: '0.5rem', position: 'relative' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>{branch.name}</span>
-                 <div style={{ display: 'flex', gap: '0.25rem' }}>
-  <ExButton
-    size="xs"
-    variant="light"
-    onClick={(e) => {
-      e.stopPropagation();
-      setEditingBranch(branch);
-      setBranchForm({ name: branch.name, address: branch.address });
-      branchDialogRef.current?.show({ overlay: true });
-    }}
-  >✏️</ExButton>
-  <ExButton
-    size="xs"
-    variant="danger"
-    onClick={(e) => {
-      e.stopPropagation();
-      handleDeleteBranch(branch._id);
-    }}
-  >🗑️</ExButton>
-</div>
-
-                </div>
-                <div>
-                  <p>{branch.address}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      <ExDialog ref={shopDialogRef} dialogPadding="10px" closeButton>
-        <ExForm onformSubmit={handleShopSubmit} slot='dialog-form' formId='shopForm'>
-          <ExInput placeholder="Shop Name" value={shopForm.name} onvalueChanged={(e) => handleShopChange('name', e.detail.value)} />
-          <ExInput placeholder="Description" value={shopForm.description} onvalueChanged={(e) => handleShopChange('description', e.detail.value)} />
-          <ExInput placeholder="Domain" value={shopForm.domain} onvalueChanged={(e) => handleShopChange('domain', e.detail.value)} />
-          <ExInput placeholder="Contact Email" type="email" value={shopForm.contactEmail} onvalueChanged={(e) => handleShopChange('contactEmail', e.detail.value)} />
-          <ExInput placeholder="Address" value={shopForm.address} onvalueChanged={(e) => handleShopChange('address', e.detail.value)} />
-        </ExForm>
-        <ExButton formId='shopForm' slot='custom-buttons'>{editingShop ? 'Update Shop' : 'Create Shop'}</ExButton>
-      </ExDialog>
-
-      <ExDialog ref={branchDialogRef} dialogPadding="10px" closeButton>
-        <ExForm onformSubmit={handleBranchSubmit} slot='dialog-form' formId="branchForm">
-          <ExInput placeholder="Branch Name" value={branchForm.name} onvalueChanged={(e) => handleBranchChange('name', e.detail.value)} />
-          <ExInput placeholder="Address" value={branchForm.address} onvalueChanged={(e) => handleBranchChange('address', e.detail.value)} />
-        </ExForm>
-        <ExButton formId="branchForm" slot='custom-buttons'>{editingBranch ? 'Update Branch' : 'Create Branch'}</ExButton>
-      </ExDialog>
+        </div>
+      ))}
     </div>
-  );
+
+    <ExDialog ref={nodeDialogRef} dialogPadding="10px" closeButton>
+      <ExForm onformSubmit={handleNodeSubmit} slot='dialog-form' formId="nodeForm">
+        <ExInput placeholder="Name" value={nodeForm.name} onvalueChanged={(e) => handleNodeChange('name', e.detail.value)} />
+        <ExInput placeholder="Address" value={nodeForm.address} onvalueChanged={(e) => handleNodeChange('address', e.detail.value)} />
+        <ExCombobox
+          style={{ maxWidth: '100%' }}
+          placeholder="Select parent"
+          emittedKey="value"
+          options={[
+            { label: 'No Parent', value: '' },
+            ...nodes
+              .filter(n => !editingNode || n._id !== editingNode._id)
+              .map(n => ({
+                label: n.name,
+                value: String(n._id),
+              }))
+          ]}
+          value={String(nodeForm.parentId || '')}
+          onvalueChanged={(e) => handleNodeChange('parentId', e.detail.value)}
+        />
+      </ExForm>
+      <ExButton formId="nodeForm" slot='custom-buttons'>{editingNode ? 'Update' : 'Create'}</ExButton>
+    </ExDialog>
+  </div>
+);
+
 }

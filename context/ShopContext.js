@@ -5,29 +5,27 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const ShopContext = createContext();
 
 export function ShopProvider({ children }) {
-  const [shop, setShop] = useState(null);
-  const [branches, setBranches] = useState([]);
-  const [selectedBranch, setSelectedBranch] = useState(null);
+  const [shops, setShops] = useState([]);             // all shops for the user
+  const [selectedShop, setSelectedShop] = useState(null); // currently selected shop
 
   useEffect(() => {
-    const loadBranches = async () => {
-      if (!shop?._id) return;
-
+    const loadShops = async () => {
       try {
-        const res = await fetch(`/api/shop/branch/list?shopId=${shop._id}`);
+        const res = await fetch('/api/shop/list');
         const json = await res.json();
-        if (res.ok) setBranches(json.branches || []);
-        else setBranches([]);
+        if (res.ok) setShops(json.shops || []);
+        else setShops([]);
       } catch (err) {
-        setBranches([]);
+        console.error('Failed to load shops', err);
+        setShops([]);
       }
     };
 
-    loadBranches();
-  }, [shop]);
+    loadShops();
+  }, []);
 
   return (
-    <ShopContext.Provider value={{ shop, setShop, branches, selectedBranch, setSelectedBranch }}>
+    <ShopContext.Provider value={{ shops, setShops, selectedShop, setSelectedShop }}>
       {children}
     </ShopContext.Provider>
   );
