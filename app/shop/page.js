@@ -10,7 +10,8 @@ import {
 } from '@bhavinpatel57/element-x';
 import { notifyGlobal } from '../components/NotificationProvider';
 import { useAuth } from '@/context/AuthContext';
-import './shop.css'; // Assuming you have some styles for the shop hierarchy
+import { useShop } from '@/context/ShopContext';
+import './shop.css';
 
 export default function ShopHierarchyManager() {
   const [nodes, setNodes] = useState([]);
@@ -19,6 +20,9 @@ export default function ShopHierarchyManager() {
   const nodeDialogRef = useRef(null);
   const { user } = useAuth();
   const [selectedPath, setSelectedPath] = useState([]);
+
+  // 🔁 Shop context
+  const { selectedShop, setSelectedShop } = useShop();
 
   const handleSelectNode = (node, level) => {
     setSelectedPath(prev => [...prev.slice(0, level), node]);
@@ -41,8 +45,9 @@ export default function ShopHierarchyManager() {
     try {
       const res = await fetch('/api/shop/list');
       const data = await res.json();
-      if (res.ok && Array.isArray(data.shops)) setNodes(data.shops);
-      else notifyGlobal(data.error || 'Failed to load nodes', 'error');
+      if (res.ok && Array.isArray(data.shops)) {
+        setNodes(data.shops);
+      } else notifyGlobal(data.error || 'Failed to load nodes', 'error');
     } catch (err) {
       notifyGlobal('Error fetching nodes', 'error');
     }
@@ -102,7 +107,11 @@ export default function ShopHierarchyManager() {
 
   const openEditNode = (node) => {
     setEditingNode(node);
-    setNodeForm({ name: node.name, address: node.address, parentId: node.parent || '' });
+    setNodeForm({
+      name: node.name,
+      address: node.address,
+      parentId: node.parent || '',
+    });
     nodeDialogRef.current?.show({ overlay: true });
   };
 
@@ -112,14 +121,14 @@ export default function ShopHierarchyManager() {
   };
 
   const renderShopCard = (node, level) => {
-    const hasChildren = nodes.some(n => n.parentId === node._id);
-    const isActive = selectedPath[level]?._id === node._id;
+   const hasChildren = nodes.some(n => n.parentId === node._id);
+       const isActive = selectedPath[level]?._id === node._id;
 
     return (
       <div
         key={node._id}
         onClick={() => handleSelectNode(node, level)}
-className={`shop-card ${isActive ? 'active' : ''}`}
+        className={`shop-card ${isActive ? 'active' : ''}`}
       >
         <div className="flex justify-between items-center">
           <strong>{node.name}</strong>
@@ -145,83 +154,123 @@ className={`shop-card ${isActive ? 'active' : ''}`}
     );
   };
 
-return (
-  <div className="shop-manager">
-    <div className="shop-manager__header">
-      <h2>Shop Nodes</h2>
-      <ExButton
-        onClick={() => {
-          setNodeForm({ name: '', address: '', parentId: '' });
-          nodeDialogRef.current?.show({ overlay: true });
-        }}
-      >
-        + Add Node
-      </ExButton>
-    </div>
+  // 🧠 Build combobox options for selecting active shop
+  const shopOptions = nodes.map(shop => ({
+    label: shop.name,
+    value: shop._id,
+  }));
 
-    {selectedPath.length > 0 && (
-      <div className="shop-manager__breadcrumb">
-        <strong>Path:</strong>{' '}
-        <span className="shop-manager__breadcrumb-root" onClick={() => setSelectedPath([])}>Root</span>
-        {selectedPath.map((node, i) => (
-          <span key={node._id}>
-            {' / '}
-            <span
-              className="shop-manager__breadcrumb-node"
-              onClick={() => setSelectedPath(prev => prev.slice(0, i + 1))}
-            >
-              {node.name}
-            </span>
-          </span>
-        ))}
-      </div>
-    )}
+  console.log('Selected Shop:', selectedShop);
 
-    <div className="shop-manager__columns">
-      <div className="shop-column">
-        <h3>Root Shops</h3>
-        <div className="shop-list">
-          {getChildren('').map(node => renderShopCard(node, 0))}
+  return (
+    <div className="shop-manager">
+      <div className="shop-manager__header">
+        <h2>Shop Nodes</h2>
+
+        <div className="flex gap-2 items-center">
+          <ExCombobox
+  placeholder="Select active shop"
+  emittedKey="value"
+  style={{ minWidth: '200px' }}
+  options={shopOptions}
+  value={selectedShop || ''}
+  onvalueChanged={(e) => {
+    const shopId = e.detail.value;
+    console.log('Selected Shop ID:', shopId);
+    setSelectedShop(shopId);
+    const shop = nodes.find(n => n._id === shopId);
+    if (shop) {
+      notifyGlobal({
+        type: 'info',
+        title: 'Shop Selected',
+        message: `You're now managing: ${shop.name}`,
+      });
+    }
+  }}
+/>
+          <ExButton
+            onClick={() => {
+              setNodeForm({ name: '', address: '', parentId: '' });
+              nodeDialogRef.current?.show({ overlay: true });
+            }}
+          >
+            + Add Node
+          </ExButton>
         </div>
       </div>
 
-      {selectedPath.map((selectedNode, level) => (
-        <div key={selectedNode._id} className="shop-column">
-          <h3>{selectedNode.name} → Children</h3>
+      {selectedPath.length > 0 && (
+        <div className="shop-manager__breadcrumb">
+          <strong>Path:</strong>{' '}
+          <span className="shop-manager__breadcrumb-root" onClick={() => setSelectedPath([])}>Root</span>
+          {selectedPath.map((node, i) => (
+            <span key={node._id}>
+              {' / '}
+              <span
+                className="shop-manager__breadcrumb-node"
+                onClick={() => setSelectedPath(prev => prev.slice(0, i + 1))}
+              >
+                {node.name}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="shop-manager__columns">
+        <div className="shop-column">
+          <h3>Root Shops</h3>
           <div className="shop-list">
-            {getChildren(selectedNode._id).map(child => renderShopCard(child, level + 1))}
-            {getChildren(selectedNode._id).length === 0 && (
-              <div className="shop-empty">No child shops</div>
-            )}
+            {getChildren('').map(node => renderShopCard(node, 0))}
           </div>
         </div>
-      ))}
+
+        {selectedPath.map((selectedNode, level) => (
+          <div key={selectedNode._id} className="shop-column">
+            <h3>{selectedNode.name} → Children</h3>
+            <div className="shop-list">
+              {getChildren(selectedNode._id).map(child => renderShopCard(child, level + 1))}
+              {getChildren(selectedNode._id).length === 0 && (
+                <div className="shop-empty">No child shops</div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <ExDialog ref={nodeDialogRef} dialogPadding="10px" closeButton>
+        <ExForm onformSubmit={handleNodeSubmit} slot="dialog-form" formId="nodeForm">
+          <ExInput
+            placeholder="Name"
+            value={nodeForm.name}
+            onvalueChanged={(e) => handleNodeChange('name', e.detail.value)}
+          />
+          <ExInput
+            placeholder="Address"
+            value={nodeForm.address}
+            onvalueChanged={(e) => handleNodeChange('address', e.detail.value)}
+          />
+          <ExCombobox
+            placeholder="Select parent"
+            emittedKey="value"
+            style={{ maxWidth: '100%' }}
+            options={[
+              { label: 'No Parent', value: '' },
+              ...nodes
+                .filter(n => !editingNode || n._id !== editingNode._id)
+                .map(n => ({
+                  label: n.name,
+                  value: n._id,
+                })),
+            ]}
+            value={String(nodeForm.parentId || '')}
+            onvalueChanged={(e) => handleNodeChange('parentId', e.detail.value)}
+          />
+        </ExForm>
+        <ExButton formId="nodeForm" slot="custom-buttons">
+          {editingNode ? 'Update' : 'Create'}
+        </ExButton>
+      </ExDialog>
     </div>
-
-    <ExDialog ref={nodeDialogRef} dialogPadding="10px" closeButton>
-      <ExForm onformSubmit={handleNodeSubmit} slot='dialog-form' formId="nodeForm">
-        <ExInput placeholder="Name" value={nodeForm.name} onvalueChanged={(e) => handleNodeChange('name', e.detail.value)} />
-        <ExInput placeholder="Address" value={nodeForm.address} onvalueChanged={(e) => handleNodeChange('address', e.detail.value)} />
-        <ExCombobox
-          style={{ maxWidth: '100%' }}
-          placeholder="Select parent"
-          emittedKey="value"
-          options={[
-            { label: 'No Parent', value: '' },
-            ...nodes
-              .filter(n => !editingNode || n._id !== editingNode._id)
-              .map(n => ({
-                label: n.name,
-                value: String(n._id),
-              }))
-          ]}
-          value={String(nodeForm.parentId || '')}
-          onvalueChanged={(e) => handleNodeChange('parentId', e.detail.value)}
-        />
-      </ExForm>
-      <ExButton formId="nodeForm" slot='custom-buttons'>{editingNode ? 'Update' : 'Create'}</ExButton>
-    </ExDialog>
-  </div>
-);
-
+  );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect,useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Required, StrongPassword, ValidEmail, ValidEmailOrPhone, ValidName } from '../../lib/validation.js';
 import './auth.css';
 import { GoogleLogin } from '@react-oauth/google';
@@ -29,9 +29,10 @@ export default function AuthPage() {
   const [forgotOtp, setForgotOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
-
-
 const toggleMode = () => {
+  // Clear all form data when switching modes
+  setRegisterData({ name: '', email: '', password: '' });
+  setLoginData({ email: '', password: '' });
   setMode(mode === 'login' ? 'register' : 'login');
 };
 
@@ -41,7 +42,35 @@ const toggleMode = () => {
 
   const handleLoginChange = (key, value) =>
     setLoginData(prev => ({ ...prev, [key]: value }));
+const checkEmailAvailability = async (email) => {
+  try {
+    const res = await fetch('/api/auth/check-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    return await res.json();
+  } catch (err) {
+    return { available: false };
+  }
+};
 
+// Then in your RegisterForm component:
+const handleEmailBlur = async (email) => {
+  if (!email || !ValidEmail(email)) return;
+  
+  const { available, isPending } = await checkEmailAvailability(email);
+  
+  if (!available) {
+    notifyGlobal({
+      title: 'Email Taken',
+      message: isPending 
+        ? 'This email has a pending verification. Please check your inbox.' 
+        : 'This email is already registered.',
+      type: 'alert',
+    });
+  }
+};
 
 const handleForgotPassword = async () => {
   setForgotEmailLoading(true);
@@ -56,17 +85,20 @@ const handleForgotPassword = async () => {
 
     if (!res.ok) {
       notifyGlobal({ title: 'Error', message: json.error, type: 'alert' });
-    } else if (json.action === 'set-password') {
-      // 🚀 Redirect to set-password dialog instead of OTP
+      return;
+    }
+
+    if (json.action === 'set-password') {
+      // Google user without password
       setForgotUserId(json.userId);
-      setForgotStep('set-password'); // or openSetPasswordDialog()
+      setForgotStep('set-password');
       notifyGlobal({
         title: 'Set Password',
         message: json.message,
         type: 'info',
       });
     } else {
-      // ✅ Proceed with OTP
+      // Regular password reset
       setForgotUserId(json.userId);
       setForgotStep('otp');
       notifyGlobal({
@@ -85,7 +117,6 @@ const handleForgotPassword = async () => {
     setForgotEmailLoading(false);
   }
 };
-
   
   const handleForgotOtpVerify = async () => {
     setForgotOtpLoading(true);
@@ -111,7 +142,7 @@ const handleForgotPassword = async () => {
     const res = await fetch('/api/auth/forgot/reset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: forgotUserId, password: newPassword }),
+      body: JSON.stringify({ userId: forgotUserId, password: newPassword ,otp: forgotOtp}),
     });
   
     const json = await res.json();
@@ -120,6 +151,10 @@ const handleForgotPassword = async () => {
     if (res.ok) {
       notifyGlobal({ title: 'Password Reset', message: 'You can now log in.', type: 'success' });
       forgotDialog.current?.close();
+      setForgotEmail('');
+    setForgotOtp('');
+    setNewPassword('');
+    setForgotUserId('');
       setMode('login');
       setForgotStep('email');
     } else {
@@ -132,7 +167,6 @@ const handleForgotPassword = async () => {
   };
   
   
-
 const handleLoginSubmit = async () => {
   setLoginLoading(true);
   try {
@@ -145,98 +179,136 @@ const handleLoginSubmit = async () => {
     const json = await res.json();
 
     if (!res.ok) {
-      notifyGlobal({
-        title: 'Login Failed',
-        message: json.error || 'Invalid credentials.',
-        type: 'alert',
-      });
+      if (json.action === 'complete-verification') {
+        // Ensure all required data is set for OTP dialog
+        setOtpData({
+          userId: json.userId,
+          email: json.email,
+          isPending: json.isPending || false
+        });
+        
+        // Forcefully show the OTP dialog
+        otpDialog.current?.show({ overlay: true });
+        
+        notifyGlobal({
+          title: 'Verification Required',
+          message: 'Please verify your email to continue',
+          type: 'info',
+        });
+      } else {
+        notifyGlobal({
+          title: 'Login Failed',
+          message: json.error || 'Invalid credentials',
+          type: 'alert',
+        });
+      }
       return;
     }
 
-    // ✅ Store token and user
+    // Handle successful login
     setUser(json.user);
-
     notifyGlobal({
       title: 'Login Successful',
       message: `Welcome ${json.user?.name || json.user?.email}`,
       type: 'success',
     });
 
-  } catch (err) {
-    notifyGlobal({
-      title: 'Error',
-      message: 'Something went wrong. Please try again.',
-      type: 'alert',
-    });
   } finally {
     setLoginLoading(false);
   }
 };
 
 
-
   
-  const handleRegisterSubmit = async () => {
-    setRegisterLoading(true);
-    try {
-      const res = await fetch('/api/auth/register/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(registerData),
+ const handleRegisterSubmit = async () => {
+  setRegisterLoading(true);
+  try {
+    const res = await fetch('/api/auth/register/initiate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(registerData),
+    });
+
+    const json = await res.json();
+
+    if (res.ok) {
+      setRegisterData({ name: '', email: '', password: '' });
+      setOtpData({ 
+        userId: json.userId,
+        email: registerData.email // Pass email for resend functionality
       });
-  
-      const json = await res.json();
-
-      if (res.ok) {
-        setOtpData({ userId: json.userId }); // save for OTP form
-        otpDialog.current?.show({
-          overlay: true
-        });           // open OTP dialog
-      }
-
-      if (!res.ok) {
-        notifyGlobal({
-          title: 'Register Failed',
-          message: json.error || 'Please check your details.',
-          type: 'alert',
-        });
-        return;
-      }
-  
-      notifyGlobal({
-        title: 'Registration Successful',
-        message: `Welcome ${json.user?.name || json.user?.email || 'User'}`,
-        type: 'success',
+      otpDialog.current?.show({
+        overlay: true
       });
-  
-      setMode('login'); // Switch to login after registration
-    } catch (err) {
+    } else if (json.canResend) {
+      // Handle case where user already has pending registration
+      setOtpData({ 
+        userId: json.userId,
+        email: registerData.email
+      });
+      otpDialog.current?.show({
+        overlay: true
+      });
       notifyGlobal({
-        title: 'Error',
-        message: 'Registration error. Please try again.',
+        title: 'Verification Pending',
+        message: json.error || 'Please complete verification',
+        type: 'info',
+      });
+    } else {
+      notifyGlobal({
+        title: 'Register Failed',
+        message: json.error || 'Please check your details.',
         type: 'alert',
       });
-    } finally {
-      setRegisterLoading(false);
     }
-  };
+  } catch (err) {
+    notifyGlobal({
+      title: 'Error',
+      message: 'Registration error. Please try again.',
+      type: 'alert',
+    });
+  } finally {
+    setRegisterLoading(false);
+  }
+};
 
-  const handleOtpVerify = async ({ userId, otp }) => {
+const handleOtpVerify = async () => {
   setRegisterOtpLoading(true);
-  const res = await fetch('/api/auth/register/verify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, otp }),
-  });
-  const json = await res.json();
-  setRegisterOtpLoading(false);
-
-  if (res.ok) {
-    notifyGlobal({ title: 'Verified', message: 'Email verified!', type: 'success' });
-    otpDialog.current?.close();
-    setMode('login');
-  } else {
-    notifyGlobal({ title: 'Invalid OTP', message: json.error, type: 'alert' });
+  try {
+    const res = await fetch('/api/auth/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        userId: otpData.userId, 
+        otp: otpValue,
+        isPending: otpData.isPending // Make sure to pass this flag
+      }),
+    });
+    
+    const json = await res.json();
+    
+    if (res.ok) {
+      notifyGlobal({
+        title: 'Verified',
+        message: 'Email verification complete!',
+        type: 'success',
+      });
+      otpDialog.current?.close();
+      
+      if (mode === 'login') {
+        handleLoginSubmit(); // Retry login
+      } else {
+        setMode('login');
+      }
+    } else {
+      notifyGlobal({
+        title: 'Error',
+        message: json.error || 'Verification failed',
+        type: 'alert',
+      });
+    }
+  } finally {
+    setRegisterOtpLoading(false);
   }
 };
 
@@ -508,6 +580,18 @@ const handleGoogleLoginSuccess = async (credentialResponse, setUser) => {
         message: `Hello ${json.user?.name || json.user?.email || 'User'}`,
         type: 'success',
       });
+    } else if (json.action === 'set-password') {
+      // Google user without password wants to set one
+      setForgotUserId(json.userId);
+      setForgotStep('set-password');
+      forgotDialog.current?.show({
+        overlay: true
+      });
+      notifyGlobal({
+        title: 'Set Password',
+        message: json.message,
+        type: 'info',
+      });
     } else {
       notifyGlobal({
         title: 'Google Login Failed',
@@ -598,36 +682,86 @@ onSuccess={(credentialResponse) => handleGoogleLoginSuccess(credentialResponse, 
   );
 }
 
-function OtpForm({ userId, otp, onChange, onVerify, loading,formId }) {
-  return (<>
+function OtpForm({ userId, otp, onChange, onVerify, loading, formId, email, isRegistration }) {
+  const [resendLoading, setResendLoading] = useState(false);
+
+  const handleResend = async () => {
+    setResendLoading(true);
+    try {
+      // Choose endpoint based on whether this is for registration
+      const endpoint = isRegistration 
+        ? '/api/auth/register/resend' 
+        : '/api/auth/verify/resend';
+      
+      // Send appropriate data based on endpoint
+      const body = isRegistration
+        ? { email }
+        : { userId };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      
+      if (res.ok) {
+        notifyGlobal({
+          title: 'Email Sent',
+          message: 'New verification code sent',
+          type: 'success',
+        });
+      } else {
+        const json = await res.json();
+        notifyGlobal({
+          title: 'Error',
+          message: json.error || 'Failed to resend',
+          type: 'alert',
+        });
+      }
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
+  return (
+    <>
       <div slot='dialog-title'>
-        <div className='dialog-title'>Email Verification</div>
-        <div className='dialog-subtitle'>Enter the OTP sent to your email</div>
+        <div className='dialog-title'>Complete Verification</div>
+        <div className='dialog-subtitle'>Enter OTP sent to {email}</div>
       </div>
       <ExForm
         formId={formId}
-        resetOnSubmit
         onformSubmit={(e) => {
           if (e.detail.success) onVerify({ userId, otp });
-        }} slot='dialog-form'
+        }}
+        slot='dialog-form'
       >
         <ExOtp
-          type="text"
-          placeholder="Enter OTP"
           value={otp}
           onvalueChanged={(e) => onChange(e.detail.otp)}
           required
         />
       </ExForm>
-      <ExButton
-        type="submit"
-        slot='custom-buttons'
-        variant="transparent"
-        formId={formId}
-        loading={loading}
-        disabled={loading}
-      >
-        Verify OTP
-      </ExButton></>
+      <div slot='custom-buttons' className='otp-buttons'>
+        <ExButton
+          type="submit"
+          variant="transparent"
+          formId={formId}
+          loading={loading}
+          disabled={loading}
+        >
+          Verify
+        </ExButton>
+        <ExButton
+          variant="transparent"
+          color='var(--ex-success-primary)'
+          onClick={handleResend}
+          loading={resendLoading}
+          disabled={resendLoading}
+        >
+          Resend OTP
+        </ExButton>
+      </div>
+    </>
   );
 }

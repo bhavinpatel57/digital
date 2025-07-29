@@ -7,7 +7,7 @@ export async function POST(request) {
 
   const { userId, otp } = await request.json();
   if (!userId || !otp) {
-    return Response.json({ error: 'Missing user ID or OTP' }, { status: 400 });
+    return Response.json({ error: 'Missing OTP or user ID' }, { status: 400 });
   }
 
   const hashedToken = crypto.createHash('sha256').update(otp).digest('hex');
@@ -22,5 +22,9 @@ export async function POST(request) {
     return Response.json({ error: 'Invalid or expired OTP' }, { status: 400 });
   }
 
-  return Response.json({ message: 'OTP verified', userId });
+  // Don't clear the token here - just return success
+  return Response.json({ 
+    message: 'OTP verified successfully',
+    userId: user._id
+  });
 }

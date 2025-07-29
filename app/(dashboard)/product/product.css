@@ -1,0 +1,15 @@
+.product-page {
+  padding: 20px;
+}
+
+.product-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
