@@ -15,29 +15,29 @@ let globalNotify = () => {};
 // Define preset styles
 const PRESET_STYLES = {
   info: {
-    background: 'var(--ex-info-primary)',
-    titleColor: 'var(--ex-text-white)',
-    messageColor: 'var(--ex-text-white)',
+    background: 'var(--ex-info-g1)',
+    titleColor: 'var(--ex-info-primary-dark)',
+    messageColor: 'var(--ex-info-primary)',
   },
   success: {
-    background: 'var(--ex-success-primary)',
-    titleColor: 'var(--ex-text-white)',
-    messageColor: 'var(--ex-text-white)',
+    background: 'var(--ex-success-g1)',
+    titleColor: 'var(--ex-success-primary-dark)',
+    messageColor: 'var(--ex-success-primary)',
   },
   warn: {
-    background: 'var(--ex-warning-primary)',
-    titleColor: 'var(--ex-text-white)',
-    messageColor: 'var(--ex-text-white)',
+    background: 'var(--ex-warning-g1)',
+    titleColor: 'var(--ex-warning-primary-dark)',
+    messageColor: 'var(--ex-warning-primary)',
   },
   alert: {
-    background: 'var(--ex-danger-primary)',
-    titleColor: 'var(--ex-text-white)',
-    messageColor: 'var(--ex-text-white)',
+    background: 'var(--ex-danger-g1)',
+    titleColor: 'var(--ex-danger-primary-dark)',
+    messageColor: 'var(--ex-danger-primary)',
   },
   active: {
-    background: 'var(--ex-active-primary)',
-    titleColor: 'var(--ex-text-white)',
-    messageColor: 'var(--ex-text-white)',
+    background: 'var(--ex-active-g1)',
+    titleColor: 'var(--ex-active-primary-dark)',
+    messageColor: 'var(--ex-active-primary)',
   },
 };
 
@@ -72,7 +72,8 @@ export function NotificationProvider({ children }) {
   return (
     <NotificationContext.Provider value={{ notify: globalNotify }}>
       {children}
-      <ExNotification ref={ref} position="bottom-right" mergeDuplicates/>
+      <ExNotification ref={ref} position="top-center" mergeDuplicates        style={{ '--exc-border': 'none','--exc-box-shadow':'var(--ex-box-shadow-primary)' }} 
+        closeButton={false}/>
     </NotificationContext.Provider>
   );
 }

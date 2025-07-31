@@ -6,28 +6,19 @@ export default function ElementXLoader() {
     import('@bhavinpatel57/element-x').then((mod) => {
       mod.createTheme?.({
         light: {
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif",
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
           backgroundColor: "#ffffff",
           text: {
-            primary: "#111827",    // gray-900
-            secondary: "#374151",   // gray-700
-            tertiary: "#6b7280",    // gray-500
-            quaternary: "#9ca3af", // gray-400
-            quinary: "#e5e7eb",     // gray-200
-            dark: "#111827",
-            light: "#f9fafb",
+            primary: "#1a1a1a",   
+            secondary: "#4d4d4d",   
+            tertiary: "#808080",   
+            quaternary: "#b3b3b3", 
+            quinary: "#e6e6e6",     
+            dark: "#0d0d0d",
+            light: "#ffffff",
           },
           glass: {
-            baseColor: "#ffffff",
-            opacities: { 
-              primary: 0.95, 
-              secondary: 0.85, 
-              tertiary: 0.75, 
-              solid: 1.0 
-            },
-          },
-          overlay: {
-            color: "#ffffff",
+            baseColor: "rgba(255, 255, 255, 0.8)",
             opacities: { 
               primary: 0.8, 
               secondary: 0.6, 
@@ -35,136 +26,145 @@ export default function ElementXLoader() {
               solid: 1.0 
             },
           },
-          glassHover: {
-            color: "#111827",
-            opacity: { 
-              primary: 0.04, 
-              secondary: 0.06, 
-              tertiary: 0.08, 
-              solid: 1.0 
-            },
-          },
-          blur: { 
-            primary: "8px", 
-            secondary: "12px", 
-            tertiary: "16px" 
-          },
-          radius: {
-            primary: "8px",
-            secondary: "12px",
-            tertiary: "16px",
-            full: "9999px",
-          },
-          boxshadow: {
-            primary: "0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)",
-            secondary: "0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1)",
-            tertiary: "0 10px 15px rgba(0,0,0,0.05), 0 4px 6px rgba(0,0,0,0.1)",
-            inset: "inset 0 2px 4px rgba(0,0,0,0.05)",
-            hover: "0 20px 25px rgba(0,0,0,0.1), 0 10px 10px rgba(0,0,0,0.04)",
-          },
-          brightness: { 
-            primary: "1", 
-            secondary: "1.02", 
-            tertiary: "1.05" 
-          },
-          saturation: { 
-            primary: "1", 
-            secondary: "1.05", 
-            tertiary: "1.1" 
-          },
-          color: {
-            active: "#2563eb",      // blue-600
-            success: "#10b981",     // emerald-500
-            warning: "#f59e0b",     // amber-500
-            danger: "#ef4444",     // red-500
-            info: "#06b6d4",        // cyan-500
-          },
-          separator: "#e5e7eb",     // gray-200
-          border: {
-            primary: "1px solid #e5e7eb",
-            secondary: "1px dashed #d1d5db",
-            tertiary: "1px dotted #d1d5db",
-          },
-        },
-        dark: {
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif",
-          backgroundColor: "#111827", // gray-900
-          text: {
-            primary: "#f9fafb",     // gray-50
-            secondary: "#e5e7eb",    // gray-200
-            tertiary: "#9ca3af",    // gray-400
-            quaternary: "#6b7280",   // gray-500
-            quinary: "#374151",      // gray-700
-            dark: "#111827",
-            light: "#f9fafb",
-          },
-          glass: {
-            baseColor: "#1f2937",   // gray-800
-            opacities: { 
-              primary: 0.95, 
-              secondary: 0.85, 
-              tertiary: 0.75, 
-              solid: 1.0 
-            },
-          },
           overlay: {
-            color: "#111827",
+            color: "rgba(0, 0, 0, 0.5)",
             opacities: { 
-              primary: 0.85, 
+              primary: 0.5, 
+              secondary: 0.3, 
+              tertiary: 0.1, 
+              solid: 1.0 
+            },
+          },
+          glassHover: {
+            color: "rgba(255, 255, 255, 0.9)",
+            opacity: { 
+              primary: 0.9, 
               secondary: 0.7, 
               tertiary: 0.5, 
               solid: 1.0 
             },
           },
+          blur: { 
+            primary: "6px", 
+            secondary: "12px", 
+            tertiary: "18px" 
+          },
+          radius: {
+            primary: "6px",
+            secondary: "12px",
+            tertiary: "18px",
+            full: "9999px",
+          },
+          boxshadow: {
+            primary: "0 1px 3px rgba(0, 0, 0, 0.03)",
+            secondary: "0 2px 6px rgba(0, 0, 0, 0.05)",
+            tertiary: "0 4px 12px rgba(0, 0, 0, 0.08)",
+            inset: "inset 0 1px 2px rgba(0, 0, 0, 0.05)",
+            hover: "0 8px 24px rgba(0, 0, 0, 0.12)",
+          },
+          brightness: { 
+            primary: "105%", 
+            secondary: "110%", 
+            tertiary: "120%" 
+          },
+          saturation: { 
+            primary: "110%", 
+            secondary: "120%", 
+            tertiary: "130%" 
+          },
+          color: {
+            active: "#4361ee",     
+            success: "#2ecc71",     
+            warning: "#f39c12",   
+            danger: "#e74c3c",    
+            info: "#3498db",     
+          },
+          separator: "rgba(0, 0, 0, 0.015)",  
+          border: {
+            primary: "1px solid rgba(0, 0, 0, 0.04)",
+            secondary: "1px solid rgba(0, 0, 0, 0.08)",
+            tertiary: "1px solid rgba(0, 0, 0, 0.12)",
+          },
+        },
+        dark: {
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+          backgroundColor: "#121212",
+          text: {
+            primary: "#f5f5f5",   
+            secondary: "#d9d9d9",   
+            tertiary: "#a6a6a6",   
+            quaternary: "#737373", 
+            quinary: "#404040",     
+            dark: "#000000",
+            light: "#ffffff",
+          },
+          glass: {
+            baseColor: "rgba(18, 18, 18, 0.8)",
+            opacities: { 
+              primary: 0.8, 
+              secondary: 0.6, 
+              tertiary: 0.4, 
+              solid: 1.0 
+            },
+          },
+          overlay: {
+            color: "rgba(0, 0, 0, 0.7)",
+            opacities: { 
+              primary: 0.7, 
+              secondary: 0.5, 
+              tertiary: 0.3, 
+              solid: 1.0 
+            },
+          },
           glassHover: {
-            color: "#f9fafb",
+            color: "rgba(30, 30, 30, 0.9)",
             opacity: { 
-              primary: 0.05, 
-              secondary: 0.08, 
-              tertiary: 0.12, 
+              primary: 0.9, 
+              secondary: 0.7, 
+              tertiary: 0.5, 
               solid: 1.0 
             },
           },
           blur: { 
-            primary: "8px", 
+            primary: "6px", 
             secondary: "12px", 
-            tertiary: "16px" 
+            tertiary: "18px" 
           },
           radius: {
-            primary: "8px",
+            primary: "6px",
             secondary: "12px",
-            tertiary: "16px",
+            tertiary: "18px",
             full: "9999px",
           },
           boxshadow: {
-            primary: "0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.3)",
-            secondary: "0 4px 6px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.3)",
-            tertiary: "0 10px 15px rgba(0,0,0,0.2), 0 4px 6px rgba(0,0,0,0.3)",
-            inset: "inset 0 2px 4px rgba(0,0,0,0.3)",
-            hover: "0 20px 25px rgba(0,0,0,0.3), 0 10px 10px rgba(0,0,0,0.2)",
+            primary: "0 1px 3px rgba(0, 0, 0, 0.15)",
+            secondary: "0 2px 6px rgba(0, 0, 0, 0.2)",
+            tertiary: "0 4px 12px rgba(0, 0, 0, 0.3)",
+            inset: "inset 0 1px 2px rgba(255, 255, 255, 0.05)",
+            hover: "0 8px 24px rgba(0, 0, 0, 0.4)",
           },
           brightness: { 
-            primary: "1", 
-            secondary: "1.02", 
-            tertiary: "1.05" 
+            primary: "110%", 
+            secondary: "120%", 
+            tertiary: "130%" 
           },
           saturation: { 
-            primary: "1", 
-            secondary: "1.05", 
-            tertiary: "1.1" 
+            primary: "110%", 
+            secondary: "120%", 
+            tertiary: "130%" 
           },
           color: {
-            active: "#3b82f6",     // blue-500
-            success: "#34d399",    // emerald-400
-            warning: "#fbbf24",     // amber-400
-            danger: "#f87171",     // red-400
-            info: "#22d3ee",        // cyan-400
+            active: "#5a7aff",     
+            success: "#48d68b",     
+            warning: "#ffb142",   
+            danger: "#ff6b5c",    
+            info: "#5dade2",     
           },
-          separator: "#374151",     // gray-700
+          separator: "rgba(255, 255, 255, 0.15)",  
           border: {
-            primary: "1px solid #374151",
-            secondary: "1px dashed #4b5563",
-            tertiary: "1px dotted #4b5563",
+            primary: "1px solid rgba(255, 255, 255, 0.04)",
+            secondary: "1px solid rgba(255, 255, 255, 0.08)",
+            tertiary: "1px solid rgba(255, 255, 255, 0.12)",
           },
         },
       });

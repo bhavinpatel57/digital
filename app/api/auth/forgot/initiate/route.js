@@ -1,3 +1,4 @@
+// app/api/auth/forgot/initiate/route.js
 import { connectDB } from '@/lib/db';
 import { User } from '@/models/User';
 import { generateResetToken } from '@/utils/resetToken';
@@ -14,9 +15,17 @@ export async function POST(request) {
   const user = await User.findOne({ email });
 
   // Always return generic success response
-  const genericResponse = Response.json({ message: 'OTP sent if account exists' });
+  const genericResponse = Response.json({ 
+    message: 'If an account exists, an OTP has been sent',
+    email
+  });
 
   if (!user) return genericResponse;
+
+  // Clear any existing reset tokens
+  user.resetToken = undefined;
+  user.resetTokenExpires = undefined;
+  await user.save();
 
   const { rawToken, hashedToken } = generateResetToken();
   user.resetToken = hashedToken;
@@ -36,5 +45,6 @@ export async function POST(request) {
   return Response.json({
     message: 'OTP sent if account exists',
     userId: user._id.toString(),
+    email: user.email
   });
 }

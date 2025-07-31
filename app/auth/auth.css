@@ -14,7 +14,8 @@
     overflow: hidden;
     min-height: 70%;
     min-width: 70%;
-    box-shadow:rgba(0, 0, 0, 0.1) -4px 9px 25px -6px;;
+    box-shadow:var(--ex-box-shadow-tertiary);
+    border: var(--ex-border-tertiary);
     border-radius: var(--ex-radius-tertiary);
   }
 
@@ -55,7 +56,7 @@
     left: 0;
     width: 50%;
     height: 100%;
-    background: linear-gradient(135deg, var(--ex-active-primary), var(--ex-danger-primary));
+    background: linear-gradient(135deg, var(--ex-text-primary), var(--ex-text-tertiary));
     display: flex;
     align-items: center;
     justify-content: center;

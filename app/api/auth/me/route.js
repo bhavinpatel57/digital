@@ -30,7 +30,7 @@ export async function GET() {
           const newAccessToken = generateAccessToken(user);
           
           // Set new access token cookie
-          cookies().set('accessToken', newAccessToken, {
+         await cookies().set('accessToken', newAccessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',

@@ -1,3 +1,4 @@
+// app/api/auth/forgot/verify/route.js
 import { connectDB } from '@/lib/db';
 import { User } from '@/models/User';
 import crypto from 'crypto';
@@ -22,9 +23,14 @@ export async function POST(request) {
     return Response.json({ error: 'Invalid or expired OTP' }, { status: 400 });
   }
 
-  // Don't clear the token here - just return success
+  // Clear the reset token but don't save yet (will be saved in reset step)
+  user.resetToken = undefined;
+  user.resetTokenExpires = undefined;
+  await user.save();
+
   return Response.json({ 
     message: 'OTP verified successfully',
-    userId: user._id
+    userId: user._id,
+    verified: true
   });
 }
